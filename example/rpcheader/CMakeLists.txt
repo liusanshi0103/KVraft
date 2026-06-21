@@ -1,0 +1,9 @@
+add_executable(rpcHeaderMain 
+main.cpp
+${PROJECT_SOURCE_DIR}/example/protobuf/friend.pb.cc
+)
+include_directories(${PROJECT_SOURCE_DIR}/example/protobuf)
+target_link_libraries(rpcHeaderMain
+  rpc_lib
+  protobuf
+)
