@@ -34,41 +34,49 @@ void RpcProvider::NotifyService(google::protobuf::Service* service) {
 }
 
 void RpcProvider::Run(const std::string& ip, uint16_t port) {
-  int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (listen_fd == -1) {
+  ip_ = ip;
+  port_ = port;
+  stopped_ = false;
+  int listen_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  if (listen_fd_ == -1) {
     std::cerr << "socket failed" << std::endl;
     return;
   }
 
   int opt = 1;
-  setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+  setsockopt(listen_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
   sockaddr_in addr{};
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = inet_addr(ip.c_str());
 
-  if (bind(listen_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
+  if (bind(listen_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == -1) {
     std::cerr << "bind failed" << std::endl;
-    close(listen_fd);
+    close(listen_fd_);
     return;
   }
 
-  if (listen(listen_fd, 10) == -1) {
+  if (listen(listen_fd_, 10) == -1) {
     std::cerr << "listen failed" << std::endl;
-    close(listen_fd);
+    close(listen_fd_);
     return;
   }
 
   std::cout << "RpcProvider listen on " << ip << ":" << port << std::endl;
 
-  while (true) {
-    int conn_fd = accept(listen_fd, nullptr, nullptr);
-    if (conn_fd == -1) {
-      std::cerr << "accept failed" << std::endl;
-      continue;
+  while (!stopped_) {
+    int conn_fd = accept(listen_fd_, nullptr, nullptr);
+     if (conn_fd < 0) {
+    if (stopped_) {
+      break;
     }
-
+    continue;
+  }
+  if (stopped_) {
+  close(conn_fd);
+  break;
+}
     char recv_buf[4096] = {0};
     int recv_size = recv(conn_fd, recv_buf, sizeof(recv_buf), 0);
     if (recv_size <= 0) {
@@ -79,7 +87,7 @@ void RpcProvider::Run(const std::string& ip, uint16_t port) {
     OnMessage(conn_fd, std::string(recv_buf, recv_size));
   }
 
-  close(listen_fd);
+  close(listen_fd_);
 }
 
 void RpcProvider::OnMessage(int conn_fd, const std::string& recv_buf) {
@@ -167,4 +175,29 @@ void RpcProvider::SendRpcResponse(int conn_fd, google::protobuf::Message* respon
 
   delete response;
   close(conn_fd);
+}
+void RpcProvider::Stop() {
+  stopped_ = true;
+
+  if (listen_fd_ >= 0) {
+    shutdown(listen_fd_, SHUT_RDWR);
+    close(listen_fd_);
+  }
+
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (sockfd >= 0 && !ip_.empty() && port_ != 0) {
+    sockaddr_in server_addr{};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port_);
+    inet_pton(AF_INET, ip_.c_str(), &server_addr.sin_addr);
+
+    connect(sockfd,
+            reinterpret_cast<sockaddr*>(&server_addr),
+            sizeof(server_addr));
+
+    close(sockfd);
+  }
+
+  listen_fd_ = -1;
 }

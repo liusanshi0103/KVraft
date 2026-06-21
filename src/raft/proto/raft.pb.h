@@ -48,7 +48,7 @@ struct TableStruct_raft_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[5]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[6]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -65,6 +65,9 @@ extern AppendEntriesReplyDefaultTypeInternal _AppendEntriesReply_default_instanc
 class LogEntry;
 class LogEntryDefaultTypeInternal;
 extern LogEntryDefaultTypeInternal _LogEntry_default_instance_;
+class PersistentRaftState;
+class PersistentRaftStateDefaultTypeInternal;
+extern PersistentRaftStateDefaultTypeInternal _PersistentRaftState_default_instance_;
 class RequestVoteArgs;
 class RequestVoteArgsDefaultTypeInternal;
 extern RequestVoteArgsDefaultTypeInternal _RequestVoteArgs_default_instance_;
@@ -76,6 +79,7 @@ PROTOBUF_NAMESPACE_OPEN
 template<> ::raft::AppendEntriesArgs* Arena::CreateMaybeMessage<::raft::AppendEntriesArgs>(Arena*);
 template<> ::raft::AppendEntriesReply* Arena::CreateMaybeMessage<::raft::AppendEntriesReply>(Arena*);
 template<> ::raft::LogEntry* Arena::CreateMaybeMessage<::raft::LogEntry>(Arena*);
+template<> ::raft::PersistentRaftState* Arena::CreateMaybeMessage<::raft::PersistentRaftState>(Arena*);
 template<> ::raft::RequestVoteArgs* Arena::CreateMaybeMessage<::raft::RequestVoteArgs>(Arena*);
 template<> ::raft::RequestVoteReply* Arena::CreateMaybeMessage<::raft::RequestVoteReply>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
@@ -934,6 +938,174 @@ class AppendEntriesReply PROTOBUF_FINAL :
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_raft_2eproto;
 };
+// -------------------------------------------------------------------
+
+class PersistentRaftState PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:raft.PersistentRaftState) */ {
+ public:
+  inline PersistentRaftState() : PersistentRaftState(nullptr) {};
+  virtual ~PersistentRaftState();
+
+  PersistentRaftState(const PersistentRaftState& from);
+  PersistentRaftState(PersistentRaftState&& from) noexcept
+    : PersistentRaftState() {
+    *this = ::std::move(from);
+  }
+
+  inline PersistentRaftState& operator=(const PersistentRaftState& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PersistentRaftState& operator=(PersistentRaftState&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const PersistentRaftState& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const PersistentRaftState* internal_default_instance() {
+    return reinterpret_cast<const PersistentRaftState*>(
+               &_PersistentRaftState_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    5;
+
+  friend void swap(PersistentRaftState& a, PersistentRaftState& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PersistentRaftState* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PersistentRaftState* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline PersistentRaftState* New() const final {
+    return CreateMaybeMessage<PersistentRaftState>(nullptr);
+  }
+
+  PersistentRaftState* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<PersistentRaftState>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const PersistentRaftState& from);
+  void MergeFrom(const PersistentRaftState& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PersistentRaftState* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "raft.PersistentRaftState";
+  }
+  protected:
+  explicit PersistentRaftState(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_raft_2eproto);
+    return ::descriptor_table_raft_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kLogsFieldNumber = 3,
+    kCurrentTermFieldNumber = 1,
+    kVotedForFieldNumber = 2,
+  };
+  // repeated .raft.LogEntry logs = 3;
+  int logs_size() const;
+  private:
+  int _internal_logs_size() const;
+  public:
+  void clear_logs();
+  ::raft::LogEntry* mutable_logs(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::raft::LogEntry >*
+      mutable_logs();
+  private:
+  const ::raft::LogEntry& _internal_logs(int index) const;
+  ::raft::LogEntry* _internal_add_logs();
+  public:
+  const ::raft::LogEntry& logs(int index) const;
+  ::raft::LogEntry* add_logs();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::raft::LogEntry >&
+      logs() const;
+
+  // int32 current_term = 1;
+  void clear_current_term();
+  ::PROTOBUF_NAMESPACE_ID::int32 current_term() const;
+  void set_current_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_current_term() const;
+  void _internal_set_current_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 voted_for = 2;
+  void clear_voted_for();
+  ::PROTOBUF_NAMESPACE_ID::int32 voted_for() const;
+  void set_voted_for(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_voted_for() const;
+  void _internal_set_voted_for(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:raft.PersistentRaftState)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::raft::LogEntry > logs_;
+  ::PROTOBUF_NAMESPACE_ID::int32 current_term_;
+  ::PROTOBUF_NAMESPACE_ID::int32 voted_for_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_raft_2eproto;
+};
 // ===================================================================
 
 class RaftRpc_Stub;
@@ -1468,9 +1640,94 @@ inline void AppendEntriesReply::set_update_next_index(::PROTOBUF_NAMESPACE_ID::i
   // @@protoc_insertion_point(field_set:raft.AppendEntriesReply.update_next_index)
 }
 
+// -------------------------------------------------------------------
+
+// PersistentRaftState
+
+// int32 current_term = 1;
+inline void PersistentRaftState::clear_current_term() {
+  current_term_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::_internal_current_term() const {
+  return current_term_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::current_term() const {
+  // @@protoc_insertion_point(field_get:raft.PersistentRaftState.current_term)
+  return _internal_current_term();
+}
+inline void PersistentRaftState::_internal_set_current_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  current_term_ = value;
+}
+inline void PersistentRaftState::set_current_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_current_term(value);
+  // @@protoc_insertion_point(field_set:raft.PersistentRaftState.current_term)
+}
+
+// int32 voted_for = 2;
+inline void PersistentRaftState::clear_voted_for() {
+  voted_for_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::_internal_voted_for() const {
+  return voted_for_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::voted_for() const {
+  // @@protoc_insertion_point(field_get:raft.PersistentRaftState.voted_for)
+  return _internal_voted_for();
+}
+inline void PersistentRaftState::_internal_set_voted_for(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  voted_for_ = value;
+}
+inline void PersistentRaftState::set_voted_for(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_voted_for(value);
+  // @@protoc_insertion_point(field_set:raft.PersistentRaftState.voted_for)
+}
+
+// repeated .raft.LogEntry logs = 3;
+inline int PersistentRaftState::_internal_logs_size() const {
+  return logs_.size();
+}
+inline int PersistentRaftState::logs_size() const {
+  return _internal_logs_size();
+}
+inline void PersistentRaftState::clear_logs() {
+  logs_.Clear();
+}
+inline ::raft::LogEntry* PersistentRaftState::mutable_logs(int index) {
+  // @@protoc_insertion_point(field_mutable:raft.PersistentRaftState.logs)
+  return logs_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::raft::LogEntry >*
+PersistentRaftState::mutable_logs() {
+  // @@protoc_insertion_point(field_mutable_list:raft.PersistentRaftState.logs)
+  return &logs_;
+}
+inline const ::raft::LogEntry& PersistentRaftState::_internal_logs(int index) const {
+  return logs_.Get(index);
+}
+inline const ::raft::LogEntry& PersistentRaftState::logs(int index) const {
+  // @@protoc_insertion_point(field_get:raft.PersistentRaftState.logs)
+  return _internal_logs(index);
+}
+inline ::raft::LogEntry* PersistentRaftState::_internal_add_logs() {
+  return logs_.Add();
+}
+inline ::raft::LogEntry* PersistentRaftState::add_logs() {
+  // @@protoc_insertion_point(field_add:raft.PersistentRaftState.logs)
+  return _internal_add_logs();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::raft::LogEntry >&
+PersistentRaftState::logs() const {
+  // @@protoc_insertion_point(field_list:raft.PersistentRaftState.logs)
+  return logs_;
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

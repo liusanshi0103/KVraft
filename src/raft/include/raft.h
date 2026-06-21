@@ -12,6 +12,7 @@
 #include "raft.pb.h"
 #include "util.h"
 #include "blocking_queue.h"
+#include "persister.h"
 
 class Raft : public raft::RaftRpc {
  public:
@@ -25,13 +26,16 @@ class Raft : public raft::RaftRpc {
   Raft();
   ~Raft();
   void Stop();
+  void BecomeLeaderForTest();
   int LastLogIndexForTest();
   void ApplierTicker();
   void UpdateCommitIndex();
+  void Persist();
+  void ReadPersist(const std::string& data);
 
   bool PopApplyMsgForTest(ApplyMsg* msg, int timeout_ms);
 
-  void Init(int me, const std::vector<std::pair<std::string, uint16_t>>& peer_addrs);
+  void Init(int me, const std::vector<std::pair<std::string, uint16_t>>& peer_addrs,std::shared_ptr<Persister> persister = nullptr);
 
   void GetState(int* term, bool* is_leader);
 
@@ -96,4 +100,5 @@ class Raft : public raft::RaftRpc {
   std::thread heartbeat_thread_;
   std::shared_ptr<BlockingQueue<ApplyMsg>> apply_chan_;
   std::thread applier_thread_;
+  std::shared_ptr<Persister> persister_;
 };

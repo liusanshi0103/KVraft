@@ -15,6 +15,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src/raft/proto)
 
 add_subdirectory(src/common)
 add_subdirectory(src/rpc)
-add_subdirectory(example)
 add_subdirectory(src/raft)
 add_subdirectory(src/kv)
+add_subdirectory(src/clerk)
+add_subdirectory(example)

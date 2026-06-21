@@ -3,7 +3,7 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/service.h>
-
+#include <atomic>
 #include <string>
 #include <unordered_map>
 
@@ -12,6 +12,7 @@ class RpcProvider {
   void NotifyService(google::protobuf::Service* service);
 
   void Run(const std::string& ip, uint16_t port);
+  void Stop();
 
  private:
   struct ServiceInfo {
@@ -25,4 +26,8 @@ class RpcProvider {
 
  private:
   std::unordered_map<std::string, ServiceInfo> service_map_;
+  std::atomic<bool> stopped_{false};
+  int listen_fd_ = -1;
+  std::string ip_;
+  uint16_t port_ = 0;
 };

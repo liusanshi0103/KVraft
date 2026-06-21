@@ -9,7 +9,7 @@ void KvServer::ApplyLoop() {
   while (true) {
     ApplyMsg msg;
 
-    if (!raft_->PopApplyMsg(&msg, 100)) {
+    if (!raft_->PopApplyMsgForTest(&msg, 100)) {
       continue;
     }
 
@@ -36,7 +36,7 @@ void KvServer::ApplyLoop() {
     NotifyWaitCh(msg.command_index, op);
   }
 }
-bool KvServer::PutAppend(const std::string& key,
+bool KvServer::PutAppendLocal(const std::string& key,
                          const std::string& value,
                          const std::string& op_type,
                          const std::string& client_id,
@@ -68,7 +68,7 @@ bool KvServer::PutAppend(const std::string& key,
   return applied_op.client_id == client_id &&
          applied_op.request_id == request_id;
 }
-std::string KvServer::Get(const std::string& key,
+std::string KvServer::GetLocal(const std::string& key,
                           const std::string& client_id,
                           int request_id,
                           bool* wrong_leader) {
@@ -106,4 +106,79 @@ std::string KvServer::Get(const std::string& key,
   }
 
   return it->second;
+}
+void KvServer::PutAppend(google::protobuf::RpcController* controller,
+                         const kvraft::PutAppendArgs* request,
+                         kvraft::PutAppendReply* response,
+                         google::protobuf::Closure* done) {
+  bool ok = PutAppendLocal(request->key(),
+                           request->value(),
+                           request->op(),
+                           request->client_id(),
+                           request->request_id());
+
+  response->set_err(ok ? "OK" : "ErrWrongLeader");
+
+  if (done) {
+    done->Run();
+  }
+}
+void KvServer::Get(google::protobuf::RpcController* controller,
+                   const kvraft::GetArgs* request,
+                   kvraft::GetReply* response,
+                   google::protobuf::Closure* done) {
+  bool wrong_leader = false;
+
+  std::string value = GetLocal(request->key(),
+                               request->client_id(),
+                               request->request_id(),
+                               &wrong_leader);
+
+  if (wrong_leader) {
+    response->set_err("ErrWrongLeader");
+    response->set_value("");
+  } else {
+    response->set_err("OK");
+    response->set_value(value);
+  }
+
+  if (done) {
+    done->Run();
+  }
+}
+
+bool KvServer::IsDuplicate(const std::string& client_id, int request_id) {
+  auto it = last_request_id_.find(client_id);
+  if (it == last_request_id_.end()) {
+    return false;
+  }
+  return request_id <= it->second;
+}
+
+std::shared_ptr<BlockingQueue<Op>> KvServer::GetWaitCh(int index) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (wait_apply_ch_.find(index) == wait_apply_ch_.end()) {
+    wait_apply_ch_[index] = std::make_shared<BlockingQueue<Op>>();
+  }
+
+  return wait_apply_ch_[index];
+}
+
+void KvServer::NotifyWaitCh(int index, const Op& op) {
+  std::shared_ptr<BlockingQueue<Op>> ch;
+
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto it = wait_apply_ch_.find(index);
+    if (it == wait_apply_ch_.end()) {
+      return;
+    }
+
+    ch = it->second;
+    wait_apply_ch_.erase(it);
+  }
+
+  ch->Push(op);
 }

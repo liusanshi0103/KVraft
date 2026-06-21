@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package kvraft;
+
+option cc_generic_services = true;
+
+message GetArgs {
+  bytes key = 1;
+  bytes client_id = 2;
+  int32 request_id = 3;
+}
+
+message GetReply {
+  bytes err = 1;
+  bytes value = 2;
+}
+
+message PutAppendArgs {
+  bytes key = 1;
+  bytes value = 2;
+  bytes op = 3;
+  bytes client_id = 4;
+  int32 request_id = 5;
+}
+
+message PutAppendReply {
+  bytes err = 1;
+}
+
+service KvRaftServiceRpc {
+  rpc Get(GetArgs) returns (GetReply);
+  rpc PutAppend(PutAppendArgs) returns (PutAppendReply);
+}

@@ -36,8 +36,43 @@ int Raft::LastLogIndexForTest() {
   std::lock_guard<std::mutex> lock(mutex_);
   return LastLogIndex();
 }
+void Raft::Persist() {
+  if (!persister_) {
+    return;
+  }
 
-void Raft::Init(int me, const std::vector<std::pair<std::string, uint16_t>>& peer_addrs) {
+  raft::PersistentRaftState state;
+  state.set_current_term(current_term_);
+  state.set_voted_for(voted_for_);
+
+  for (const auto& log : logs_) {
+    *state.add_logs() = log;
+  }
+
+  std::string data;
+  state.SerializeToString(&data);
+
+  persister_->SaveRaftState(data);
+}
+void Raft::ReadPersist(const std::string& data) {
+  if (data.empty()) {
+    return;
+  }
+
+  raft::PersistentRaftState state;
+  if (!state.ParseFromString(data)) {
+    return;
+  }
+
+  current_term_ = state.current_term();
+  voted_for_ = state.voted_for();
+
+  logs_.clear();
+  for (const auto& log : state.logs()) {
+    logs_.push_back(log);
+  }
+}
+void Raft::Init(int me, const std::vector<std::pair<std::string, uint16_t>>& peer_addrs,std::shared_ptr<Persister> persister) {
  { std::lock_guard<std::mutex> lock(mutex_);
 
   me_ = me;
@@ -47,11 +82,15 @@ void Raft::Init(int me, const std::vector<std::pair<std::string, uint16_t>>& pee
   commit_index_ = 0;
   last_applied_ = 0;
   status_ = Status::Follower;
+  persister_ = persister;
   last_reset_election_time_ = std::chrono::steady_clock::now();
 
   next_index_.assign(peer_count_, 1);
   match_index_.assign(peer_count_, 0);
   peers_.clear();
+  if(persister_){
+    ReadPersist(persister_->ReadRaftState());
+  }
   for (int i = 0; i < peer_count_; ++i) {
       if (i == me_) {
         peers_.push_back(nullptr);
@@ -181,7 +220,7 @@ void Raft::DoElection() {
           status_ == Status::Candidate) {
         BecomeLeader();
       }
-    }).detach();
+    }).join();
   }
 }
 void Raft::HeartbeatTicker() {
@@ -262,7 +301,7 @@ void Raft::DoHeartbeat() {
         next_index_[task.server] =
             std::max(1, reply.update_next_index());
       }
-    }).detach();
+    }).join();
   }
 }
 bool Raft::PopApplyMsgForTest(ApplyMsg* msg, int timeout_ms) {
@@ -297,6 +336,11 @@ void Raft::ApplierTicker() {
   }
 }
 void Raft::GetState(int* term, bool* is_leader) {
+  if (stopped_) {
+  *term = current_term_;
+  *is_leader = false;
+  return;
+}
   std::lock_guard<std::mutex> lock(mutex_);
 
   *term = current_term_;
@@ -304,6 +348,12 @@ void Raft::GetState(int* term, bool* is_leader) {
 }
 
 void Raft::Start(const Op& command, int* new_log_index, int* new_log_term, bool* is_leader) {
+  if (stopped_) {
+  *new_log_index = -1;
+  *new_log_term = -1;
+  *is_leader = false;
+  return;
+}
   std::lock_guard<std::mutex> lock(mutex_);
 
   if (status_ != Status::Leader) {
@@ -319,6 +369,7 @@ void Raft::Start(const Op& command, int* new_log_index, int* new_log_term, bool*
   entry.set_log_index(NewLogIndex());
 
   logs_.push_back(entry);
+  Persist();
 
   *new_log_index = entry.log_index();
   *new_log_term = entry.log_term();
@@ -343,13 +394,14 @@ void Raft::RequestVoteImpl(const ::raft::RequestVoteArgs* args,
   }
   if(args->term()>current_term_){
     BecomeFollower(args->term());
+    Persist();
   }
   bool can_vote = (voted_for_==-1||voted_for_==args->candidate_id());
   bool log_ok = UpToDate(args->last_log_index(),args->last_log_term());
    if (can_vote && log_ok) {
     voted_for_ = args->candidate_id();
     last_reset_election_time_ = std::chrono::steady_clock::now();
-
+    Persist();
     reply->set_term(current_term_);
     reply->set_vote_granted(true);
         std::cout << "node " << me_
@@ -373,6 +425,7 @@ void Raft::AppendEntriesImpl(const ::raft::AppendEntriesArgs* args,
 
   if (args->term() > current_term_) {
     BecomeFollower(args->term());
+    Persist();
   } else {
     status_ = Status::Follower;
   }
@@ -399,10 +452,13 @@ void Raft::AppendEntriesImpl(const ::raft::AppendEntriesArgs* args,
     if (log_index <= LastLogIndex()) {
       if (LogTermAt(log_index) != entry.log_term()) {
         logs_.resize(log_index - 1);
+        Persist();
         logs_.push_back(entry);
+        Persist();
       }
     } else {
       logs_.push_back(entry);
+      Persist();
     }
   }
 
@@ -424,6 +480,9 @@ void Raft::RequestVote(::google::protobuf::RpcController* controller,
                        const ::raft::RequestVoteArgs* request,
                        ::raft::RequestVoteReply* response,
                        ::google::protobuf::Closure* done) {
+  if (stopped_) {
+  return;
+}
   RequestVoteImpl(request, response);
   done->Run();
 }
@@ -432,6 +491,9 @@ void Raft::AppendEntries(::google::protobuf::RpcController* controller,
                          const ::raft::AppendEntriesArgs* request,
                          ::raft::AppendEntriesReply* response,
                          ::google::protobuf::Closure* done) {
+    if (stopped_) {
+  return;
+}
   AppendEntriesImpl(request, response);
   done->Run();
 }
@@ -493,6 +555,7 @@ void Raft::BecomeFollower(int term) {
   status_ = Status::Follower;
   current_term_ = term;
   voted_for_ = -1;
+  Persist();
   last_reset_election_time_ = std::chrono::steady_clock::now();
 
   std::cout << "node " << me_ << " become Follower, term="
@@ -503,6 +566,7 @@ void Raft::BecomeCandidate() {
   status_ = Status::Candidate;
   current_term_ += 1;
   voted_for_ = me_;
+  Persist();
   last_reset_election_time_ = std::chrono::steady_clock::now();
 
   std::cout << "node " << me_ << " become Candidate, term="
@@ -529,4 +593,14 @@ std::string Raft::StatusName() const {
       return "Leader";
   }
   return "Unknown";
+}
+void Raft::BecomeLeaderForTest() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  status_ = Status::Leader;
+
+  int last_log_index = LastLogIndex();
+
+  next_index_.assign(peer_count_, last_log_index + 1);
+  match_index_.assign(peer_count_, 0);
 }

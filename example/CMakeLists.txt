@@ -9,3 +9,12 @@ add_subdirectory(rpc_demo)
 add_subdirectory(kv_single)
 
 add_subdirectory(raft_cluster)
+
+add_subdirectory(kv_rpc)
+add_subdirectory(clerk_client)
+add_subdirectory(clerk_retry_test)
+add_subdirectory(test_util)
+add_subdirectory(dedup_test)
+
+add_subdirectory(persister_test)
+add_subdirectory(full_restart_test)

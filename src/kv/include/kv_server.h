@@ -9,21 +9,31 @@
 #include "blocking_queue.h"
 #include "raft.h"
 #include "util.h"
+#include "kv_service.pb.h"
 
-class KvServer {
+class KvServer : public kvraft::KvRaftServiceRpc {
  public:
   explicit KvServer(std::shared_ptr<Raft> raft);
 
-  bool PutAppend(const std::string& key,
+  bool PutAppendLocal(const std::string& key,
                  const std::string& value,
                  const std::string& op_type,
                  const std::string& client_id,
                  int request_id);
 
-  std::string Get(const std::string& key,
+  std::string GetLocal(const std::string& key,
                   const std::string& client_id,
                   int request_id,
                   bool* wrong_leader);
+                  void Get(google::protobuf::RpcController* controller,
+         const kvraft::GetArgs* request,
+         kvraft::GetReply* response,
+         google::protobuf::Closure* done) override;
+
+void PutAppend(google::protobuf::RpcController* controller,
+               const kvraft::PutAppendArgs* request,
+               kvraft::PutAppendReply* response,
+               google::protobuf::Closure* done) override;
 
  private:
   void ApplyLoop();
