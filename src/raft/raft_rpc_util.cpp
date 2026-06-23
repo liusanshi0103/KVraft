@@ -22,3 +22,9 @@ bool RaftRpcUtil::AppendEntries(raft::AppendEntriesArgs* args,
 
   return !controller.Failed();
 }
+bool RaftRpcUtil::InstallSnapshot(raft::InstallSnapshotArgs* args,
+                                  raft::InstallSnapshotReply* reply) {
+  MprpcController controller;
+  stub_->InstallSnapshot(&controller, args, reply, nullptr);
+  return !controller.Failed();
+}

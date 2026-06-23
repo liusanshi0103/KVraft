@@ -2,9 +2,20 @@
 
 KvServer::KvServer(std::shared_ptr<Raft> raft)
     : raft_(raft) {
+  ReadSnapshot(raft_->ReadSnapshot());
   stopped_ = false;
   apply_thread_ = std::thread(&KvServer::ApplyLoop, this);
   
+}
+std::string KvServer::GetValueForTest(const std::string& key) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto it = kv_db_.find(key);
+  if (it == kv_db_.end()) {
+    return "";
+  }
+
+  return it->second;
 }
 void KvServer::Stop() {
   stopped_ = true;
@@ -20,6 +31,10 @@ void KvServer::ApplyLoop() {
     if (!raft_->PopApplyMsgForTest(&msg, 100)) {
       continue;
     }
+    if (msg.snapshot_valid) {
+    ReadSnapshot(msg.snapshot);
+    continue;
+}
 
     if (!msg.command_valid) {
       continue;
@@ -42,6 +57,7 @@ void KvServer::ApplyLoop() {
     }
 
     NotifyWaitCh(msg.command_index, op);
+    MaybeSnapshot(msg.command_index);
   }
 }
 bool KvServer::PutAppendLocal(const std::string& key,
@@ -189,4 +205,142 @@ void KvServer::NotifyWaitCh(int index, const Op& op) {
   }
 
   ch->Push(op);
+}
+namespace {
+
+void AppendString(std::string* out, const std::string& value) {
+  *out += std::to_string(value.size());
+  *out += "\n";
+  *out += value;
+  *out += "\n";
+}
+
+}  // namespace
+std::string KvServer::MakeSnapshot() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  std::string data;
+
+  data += std::to_string(kv_db_.size());
+  data += "\n";
+
+  for (const auto& [key, value] : kv_db_) {
+    AppendString(&data, key);
+    AppendString(&data, value);
+  }
+
+  data += std::to_string(last_request_id_.size());
+  data += "\n";
+
+  for (const auto& [client_id, request_id] : last_request_id_) {
+    AppendString(&data, client_id);
+    data += std::to_string(request_id);
+    data += "\n";
+  }
+
+  return data;
+}
+void KvServer::MaybeSnapshot(int index) {
+  if (index <= 0) {
+    return;
+  }
+
+  if (index % 5 != 0) {
+    return;
+  }
+
+  std::string snapshot = MakeSnapshot();
+  raft_->Snapshot(index, snapshot);
+}
+namespace {
+
+bool ReadLine(const std::string& data, size_t* pos, std::string* line) {
+  size_t end = data.find('\n', *pos);
+  if (end == std::string::npos) {
+    return false;
+  }
+
+  *line = data.substr(*pos, end - *pos);
+  *pos = end + 1;
+  return true;
+}
+
+bool ReadString(const std::string& data, size_t* pos, std::string* value) {
+  std::string size_line;
+  if (!ReadLine(data, pos, &size_line)) {
+    return false;
+  }
+
+  int size = std::stoi(size_line);
+  if (*pos + size > data.size()) {
+    return false;
+  }
+
+  *value = data.substr(*pos, size);
+  *pos += size;
+
+  if (*pos < data.size() && data[*pos] == '\n') {
+    ++(*pos);
+  }
+
+  return true;
+}
+
+}  // namespace
+void KvServer::ReadSnapshot(const std::string& snapshot) {
+  if (snapshot.empty()) {
+    return;
+  }
+
+  std::unordered_map<std::string, std::string> new_kv_db;
+  std::unordered_map<std::string, int> new_last_request_id;
+
+  size_t pos = 0;
+  std::string line;
+
+  if (!ReadLine(snapshot, &pos, &line)) {
+    return;
+  }
+
+  int kv_size = std::stoi(line);
+
+  for (int i = 0; i < kv_size; ++i) {
+    std::string key;
+    std::string value;
+
+    if (!ReadString(snapshot, &pos, &key)) {
+      return;
+    }
+
+    if (!ReadString(snapshot, &pos, &value)) {
+      return;
+    }
+
+    new_kv_db[key] = value;
+  }
+
+  if (!ReadLine(snapshot, &pos, &line)) {
+    return;
+  }
+
+  int request_size = std::stoi(line);
+
+  for (int i = 0; i < request_size; ++i) {
+    std::string client_id;
+    std::string request_id_line;
+
+    if (!ReadString(snapshot, &pos, &client_id)) {
+      return;
+    }
+
+    if (!ReadLine(snapshot, &pos, &request_id_line)) {
+      return;
+    }
+
+    new_last_request_id[client_id] = std::stoi(request_id_line);
+  }
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  kv_db_ = std::move(new_kv_db);
+  last_request_id_ = std::move(new_last_request_id);
 }

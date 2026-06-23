@@ -27,9 +27,11 @@ class Raft : public raft::RaftRpc {
   ~Raft();
   void Stop();
   void BecomeLeaderForTest();
-
+  void Snapshot(int index, const std::string& snapshot);
+  int LogSizeForTest();
   int LastLogIndexForTest();
   void ApplierTicker();
+  std::string ReadSnapshot();
   void UpdateCommitIndex();
   void Persist();
   void ReadPersist(const std::string& data);
@@ -51,9 +53,15 @@ class Raft : public raft::RaftRpc {
                      const ::raft::AppendEntriesArgs* request,
                      ::raft::AppendEntriesReply* response,
                      ::google::protobuf::Closure* done) override;
-
+  void InstallSnapshot(::google::protobuf::RpcController* controller,
+                     const ::raft::InstallSnapshotArgs* request,
+                     ::raft::InstallSnapshotReply* response,
+                     ::google::protobuf::Closure* done) override;
  private:
  int LogTermAt(int log_index) const;
+ int LogVectorIndex(int log_index) const;
+  const raft::LogEntry& LogAt(int log_index) const;
+  std::string BuildPersistData() const;
   void ElectionTicker();
   void DoElection();
   void RequestVoteImpl(const ::raft::RequestVoteArgs* args,
@@ -61,6 +69,10 @@ class Raft : public raft::RaftRpc {
 
   void AppendEntriesImpl(const ::raft::AppendEntriesArgs* args,
                          ::raft::AppendEntriesReply* reply);
+  void InstallSnapshotImpl(const ::raft::InstallSnapshotArgs* args,
+                         ::raft::InstallSnapshotReply* reply);
+
+  void SendInstallSnapshot(int server);
   int LastLogIndex() const;
   int LastLogTerm() const;
   int NewLogIndex() const;

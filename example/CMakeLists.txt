@@ -18,3 +18,6 @@ add_subdirectory(dedup_test)
 
 add_subdirectory(persister_test)
 add_subdirectory(full_restart_test)
+add_subdirectory(snapshot_basic_test)
+add_subdirectory(snapshot_restart_test)
+add_subdirectory(install_snapshot_test)

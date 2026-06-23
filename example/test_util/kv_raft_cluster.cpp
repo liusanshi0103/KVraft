@@ -220,3 +220,38 @@ const std::vector<std::pair<std::string, uint16_t>>&
 KvRaftCluster::RaftAddrs() const {
   return raft_addrs_;
 }
+int KvRaftCluster::LogSize(int index) const {
+  if (index < 0 || index >= node_count_ || !rafts_[index]) {
+    return -1;
+  }
+
+  return rafts_[index]->LogSizeForTest();
+}
+void KvRaftCluster::RestartAll() {
+  for (int i = 0; i < node_count_; ++i) {
+    StartRaftNode(i);
+  }
+
+  SleepMs(500);
+
+  for (int i = 0; i < node_count_; ++i) {
+    rafts_[i]->Init(i, raft_addrs_, persisters_[i]);
+  }
+
+  for (int i = 0; i < node_count_; ++i) {
+    StartKvNode(i);
+  }
+
+  SleepMs(3000);
+}
+std::string KvRaftCluster::LocalGet(int index, const std::string& key) const {
+  if (index < 0 || index >= node_count_) {
+    return "";
+  }
+
+  if (!kv_servers_[index]) {
+    return "";
+  }
+
+  return kv_servers_[index]->GetValueForTest(key);
+}

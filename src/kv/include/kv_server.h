@@ -16,6 +16,7 @@ class KvServer : public kvraft::KvRaftServiceRpc {
  public:
   explicit KvServer(std::shared_ptr<Raft> raft);
   void Stop();
+  std::string GetValueForTest(const std::string& key);
   bool PutAppendLocal(const std::string& key,
                  const std::string& value,
                  const std::string& op_type,
@@ -38,11 +39,13 @@ void PutAppend(google::protobuf::RpcController* controller,
 
  private:
   void ApplyLoop();
-
+ 
   bool IsDuplicate(const std::string& client_id, int request_id);
   std::shared_ptr<BlockingQueue<Op>> GetWaitCh(int index);
   void NotifyWaitCh(int index, const Op& op);
-
+  std::string MakeSnapshot();
+  void MaybeSnapshot(int index);
+  void ReadSnapshot(const std::string& snapshot);
  private:
   std::mutex mutex_;
   std::shared_ptr<Raft> raft_;

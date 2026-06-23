@@ -17,6 +17,9 @@ class RaftRpcUtil {
 
   bool AppendEntries(raft::AppendEntriesArgs* args,
                      raft::AppendEntriesReply* reply);
+  bool InstallSnapshot(raft::InstallSnapshotArgs* args,
+                     raft::InstallSnapshotReply* reply);
+                     
 
  private:
   std::unique_ptr<raft::RaftRpc_Stub> stub_;

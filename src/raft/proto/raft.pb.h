@@ -48,7 +48,7 @@ struct TableStruct_raft_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[6]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[8]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -62,6 +62,12 @@ extern AppendEntriesArgsDefaultTypeInternal _AppendEntriesArgs_default_instance_
 class AppendEntriesReply;
 class AppendEntriesReplyDefaultTypeInternal;
 extern AppendEntriesReplyDefaultTypeInternal _AppendEntriesReply_default_instance_;
+class InstallSnapshotArgs;
+class InstallSnapshotArgsDefaultTypeInternal;
+extern InstallSnapshotArgsDefaultTypeInternal _InstallSnapshotArgs_default_instance_;
+class InstallSnapshotReply;
+class InstallSnapshotReplyDefaultTypeInternal;
+extern InstallSnapshotReplyDefaultTypeInternal _InstallSnapshotReply_default_instance_;
 class LogEntry;
 class LogEntryDefaultTypeInternal;
 extern LogEntryDefaultTypeInternal _LogEntry_default_instance_;
@@ -78,6 +84,8 @@ extern RequestVoteReplyDefaultTypeInternal _RequestVoteReply_default_instance_;
 PROTOBUF_NAMESPACE_OPEN
 template<> ::raft::AppendEntriesArgs* Arena::CreateMaybeMessage<::raft::AppendEntriesArgs>(Arena*);
 template<> ::raft::AppendEntriesReply* Arena::CreateMaybeMessage<::raft::AppendEntriesReply>(Arena*);
+template<> ::raft::InstallSnapshotArgs* Arena::CreateMaybeMessage<::raft::InstallSnapshotArgs>(Arena*);
+template<> ::raft::InstallSnapshotReply* Arena::CreateMaybeMessage<::raft::InstallSnapshotReply>(Arena*);
 template<> ::raft::LogEntry* Arena::CreateMaybeMessage<::raft::LogEntry>(Arena*);
 template<> ::raft::PersistentRaftState* Arena::CreateMaybeMessage<::raft::PersistentRaftState>(Arena*);
 template<> ::raft::RequestVoteArgs* Arena::CreateMaybeMessage<::raft::RequestVoteArgs>(Arena*);
@@ -1056,6 +1064,8 @@ class PersistentRaftState PROTOBUF_FINAL :
     kLogsFieldNumber = 3,
     kCurrentTermFieldNumber = 1,
     kVotedForFieldNumber = 2,
+    kLastIncludedIndexFieldNumber = 4,
+    kLastIncludedTermFieldNumber = 5,
   };
   // repeated .raft.LogEntry logs = 3;
   int logs_size() const;
@@ -1093,6 +1103,24 @@ class PersistentRaftState PROTOBUF_FINAL :
   void _internal_set_voted_for(::PROTOBUF_NAMESPACE_ID::int32 value);
   public:
 
+  // int32 last_included_index = 4;
+  void clear_last_included_index();
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_index() const;
+  void set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_last_included_index() const;
+  void _internal_set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 last_included_term = 5;
+  void clear_last_included_term();
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_term() const;
+  void set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_last_included_term() const;
+  void _internal_set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
   // @@protoc_insertion_point(class_scope:raft.PersistentRaftState)
  private:
   class _Internal;
@@ -1103,6 +1131,342 @@ class PersistentRaftState PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::raft::LogEntry > logs_;
   ::PROTOBUF_NAMESPACE_ID::int32 current_term_;
   ::PROTOBUF_NAMESPACE_ID::int32 voted_for_;
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_index_;
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_term_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_raft_2eproto;
+};
+// -------------------------------------------------------------------
+
+class InstallSnapshotArgs PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:raft.InstallSnapshotArgs) */ {
+ public:
+  inline InstallSnapshotArgs() : InstallSnapshotArgs(nullptr) {};
+  virtual ~InstallSnapshotArgs();
+
+  InstallSnapshotArgs(const InstallSnapshotArgs& from);
+  InstallSnapshotArgs(InstallSnapshotArgs&& from) noexcept
+    : InstallSnapshotArgs() {
+    *this = ::std::move(from);
+  }
+
+  inline InstallSnapshotArgs& operator=(const InstallSnapshotArgs& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline InstallSnapshotArgs& operator=(InstallSnapshotArgs&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const InstallSnapshotArgs& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const InstallSnapshotArgs* internal_default_instance() {
+    return reinterpret_cast<const InstallSnapshotArgs*>(
+               &_InstallSnapshotArgs_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    6;
+
+  friend void swap(InstallSnapshotArgs& a, InstallSnapshotArgs& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(InstallSnapshotArgs* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(InstallSnapshotArgs* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline InstallSnapshotArgs* New() const final {
+    return CreateMaybeMessage<InstallSnapshotArgs>(nullptr);
+  }
+
+  InstallSnapshotArgs* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<InstallSnapshotArgs>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const InstallSnapshotArgs& from);
+  void MergeFrom(const InstallSnapshotArgs& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(InstallSnapshotArgs* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "raft.InstallSnapshotArgs";
+  }
+  protected:
+  explicit InstallSnapshotArgs(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_raft_2eproto);
+    return ::descriptor_table_raft_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kDataFieldNumber = 5,
+    kTermFieldNumber = 1,
+    kLeaderIdFieldNumber = 2,
+    kLastIncludedIndexFieldNumber = 3,
+    kLastIncludedTermFieldNumber = 4,
+  };
+  // bytes data = 5;
+  void clear_data();
+  const std::string& data() const;
+  void set_data(const std::string& value);
+  void set_data(std::string&& value);
+  void set_data(const char* value);
+  void set_data(const void* value, size_t size);
+  std::string* mutable_data();
+  std::string* release_data();
+  void set_allocated_data(std::string* data);
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  std::string* unsafe_arena_release_data();
+  GOOGLE_PROTOBUF_RUNTIME_DEPRECATED("The unsafe_arena_ accessors for"
+  "    string fields are deprecated and will be removed in a"
+  "    future release.")
+  void unsafe_arena_set_allocated_data(
+      std::string* data);
+  private:
+  const std::string& _internal_data() const;
+  void _internal_set_data(const std::string& value);
+  std::string* _internal_mutable_data();
+  public:
+
+  // int32 term = 1;
+  void clear_term();
+  ::PROTOBUF_NAMESPACE_ID::int32 term() const;
+  void set_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_term() const;
+  void _internal_set_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 leader_id = 2;
+  void clear_leader_id();
+  ::PROTOBUF_NAMESPACE_ID::int32 leader_id() const;
+  void set_leader_id(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_leader_id() const;
+  void _internal_set_leader_id(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 last_included_index = 3;
+  void clear_last_included_index();
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_index() const;
+  void set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_last_included_index() const;
+  void _internal_set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 last_included_term = 4;
+  void clear_last_included_term();
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_term() const;
+  void set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_last_included_term() const;
+  void _internal_set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:raft.InstallSnapshotArgs)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr data_;
+  ::PROTOBUF_NAMESPACE_ID::int32 term_;
+  ::PROTOBUF_NAMESPACE_ID::int32 leader_id_;
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_index_;
+  ::PROTOBUF_NAMESPACE_ID::int32 last_included_term_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_raft_2eproto;
+};
+// -------------------------------------------------------------------
+
+class InstallSnapshotReply PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:raft.InstallSnapshotReply) */ {
+ public:
+  inline InstallSnapshotReply() : InstallSnapshotReply(nullptr) {};
+  virtual ~InstallSnapshotReply();
+
+  InstallSnapshotReply(const InstallSnapshotReply& from);
+  InstallSnapshotReply(InstallSnapshotReply&& from) noexcept
+    : InstallSnapshotReply() {
+    *this = ::std::move(from);
+  }
+
+  inline InstallSnapshotReply& operator=(const InstallSnapshotReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline InstallSnapshotReply& operator=(InstallSnapshotReply&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const InstallSnapshotReply& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const InstallSnapshotReply* internal_default_instance() {
+    return reinterpret_cast<const InstallSnapshotReply*>(
+               &_InstallSnapshotReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    7;
+
+  friend void swap(InstallSnapshotReply& a, InstallSnapshotReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(InstallSnapshotReply* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(InstallSnapshotReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline InstallSnapshotReply* New() const final {
+    return CreateMaybeMessage<InstallSnapshotReply>(nullptr);
+  }
+
+  InstallSnapshotReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<InstallSnapshotReply>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const InstallSnapshotReply& from);
+  void MergeFrom(const InstallSnapshotReply& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(InstallSnapshotReply* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "raft.InstallSnapshotReply";
+  }
+  protected:
+  explicit InstallSnapshotReply(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_raft_2eproto);
+    return ::descriptor_table_raft_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTermFieldNumber = 1,
+  };
+  // int32 term = 1;
+  void clear_term();
+  ::PROTOBUF_NAMESPACE_ID::int32 term() const;
+  void set_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_term() const;
+  void _internal_set_term(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:raft.InstallSnapshotReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::int32 term_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_raft_2eproto;
 };
@@ -1128,6 +1492,10 @@ class RaftRpc : public ::PROTOBUF_NAMESPACE_ID::Service {
   virtual void AppendEntries(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                        const ::raft::AppendEntriesArgs* request,
                        ::raft::AppendEntriesReply* response,
+                       ::google::protobuf::Closure* done);
+  virtual void InstallSnapshot(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                       const ::raft::InstallSnapshotArgs* request,
+                       ::raft::InstallSnapshotReply* response,
                        ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
@@ -1165,6 +1533,10 @@ class RaftRpc_Stub : public RaftRpc {
   void AppendEntries(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
                        const ::raft::AppendEntriesArgs* request,
                        ::raft::AppendEntriesReply* response,
+                       ::google::protobuf::Closure* done);
+  void InstallSnapshot(::PROTOBUF_NAMESPACE_ID::RpcController* controller,
+                       const ::raft::InstallSnapshotArgs* request,
+                       ::raft::InstallSnapshotReply* response,
                        ::google::protobuf::Closure* done);
  private:
   ::PROTOBUF_NAMESPACE_ID::RpcChannel* channel_;
@@ -1723,9 +2095,242 @@ PersistentRaftState::logs() const {
   return logs_;
 }
 
+// int32 last_included_index = 4;
+inline void PersistentRaftState::clear_last_included_index() {
+  last_included_index_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::_internal_last_included_index() const {
+  return last_included_index_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::last_included_index() const {
+  // @@protoc_insertion_point(field_get:raft.PersistentRaftState.last_included_index)
+  return _internal_last_included_index();
+}
+inline void PersistentRaftState::_internal_set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  last_included_index_ = value;
+}
+inline void PersistentRaftState::set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_last_included_index(value);
+  // @@protoc_insertion_point(field_set:raft.PersistentRaftState.last_included_index)
+}
+
+// int32 last_included_term = 5;
+inline void PersistentRaftState::clear_last_included_term() {
+  last_included_term_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::_internal_last_included_term() const {
+  return last_included_term_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 PersistentRaftState::last_included_term() const {
+  // @@protoc_insertion_point(field_get:raft.PersistentRaftState.last_included_term)
+  return _internal_last_included_term();
+}
+inline void PersistentRaftState::_internal_set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  last_included_term_ = value;
+}
+inline void PersistentRaftState::set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_last_included_term(value);
+  // @@protoc_insertion_point(field_set:raft.PersistentRaftState.last_included_term)
+}
+
+// -------------------------------------------------------------------
+
+// InstallSnapshotArgs
+
+// int32 term = 1;
+inline void InstallSnapshotArgs::clear_term() {
+  term_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::_internal_term() const {
+  return term_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::term() const {
+  // @@protoc_insertion_point(field_get:raft.InstallSnapshotArgs.term)
+  return _internal_term();
+}
+inline void InstallSnapshotArgs::_internal_set_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  term_ = value;
+}
+inline void InstallSnapshotArgs::set_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_term(value);
+  // @@protoc_insertion_point(field_set:raft.InstallSnapshotArgs.term)
+}
+
+// int32 leader_id = 2;
+inline void InstallSnapshotArgs::clear_leader_id() {
+  leader_id_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::_internal_leader_id() const {
+  return leader_id_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::leader_id() const {
+  // @@protoc_insertion_point(field_get:raft.InstallSnapshotArgs.leader_id)
+  return _internal_leader_id();
+}
+inline void InstallSnapshotArgs::_internal_set_leader_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  leader_id_ = value;
+}
+inline void InstallSnapshotArgs::set_leader_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_leader_id(value);
+  // @@protoc_insertion_point(field_set:raft.InstallSnapshotArgs.leader_id)
+}
+
+// int32 last_included_index = 3;
+inline void InstallSnapshotArgs::clear_last_included_index() {
+  last_included_index_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::_internal_last_included_index() const {
+  return last_included_index_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::last_included_index() const {
+  // @@protoc_insertion_point(field_get:raft.InstallSnapshotArgs.last_included_index)
+  return _internal_last_included_index();
+}
+inline void InstallSnapshotArgs::_internal_set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  last_included_index_ = value;
+}
+inline void InstallSnapshotArgs::set_last_included_index(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_last_included_index(value);
+  // @@protoc_insertion_point(field_set:raft.InstallSnapshotArgs.last_included_index)
+}
+
+// int32 last_included_term = 4;
+inline void InstallSnapshotArgs::clear_last_included_term() {
+  last_included_term_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::_internal_last_included_term() const {
+  return last_included_term_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotArgs::last_included_term() const {
+  // @@protoc_insertion_point(field_get:raft.InstallSnapshotArgs.last_included_term)
+  return _internal_last_included_term();
+}
+inline void InstallSnapshotArgs::_internal_set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  last_included_term_ = value;
+}
+inline void InstallSnapshotArgs::set_last_included_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_last_included_term(value);
+  // @@protoc_insertion_point(field_set:raft.InstallSnapshotArgs.last_included_term)
+}
+
+// bytes data = 5;
+inline void InstallSnapshotArgs::clear_data() {
+  data_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& InstallSnapshotArgs::data() const {
+  // @@protoc_insertion_point(field_get:raft.InstallSnapshotArgs.data)
+  return _internal_data();
+}
+inline void InstallSnapshotArgs::set_data(const std::string& value) {
+  _internal_set_data(value);
+  // @@protoc_insertion_point(field_set:raft.InstallSnapshotArgs.data)
+}
+inline std::string* InstallSnapshotArgs::mutable_data() {
+  // @@protoc_insertion_point(field_mutable:raft.InstallSnapshotArgs.data)
+  return _internal_mutable_data();
+}
+inline const std::string& InstallSnapshotArgs::_internal_data() const {
+  return data_.Get();
+}
+inline void InstallSnapshotArgs::_internal_set_data(const std::string& value) {
+  
+  data_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void InstallSnapshotArgs::set_data(std::string&& value) {
+  
+  data_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:raft.InstallSnapshotArgs.data)
+}
+inline void InstallSnapshotArgs::set_data(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  data_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:raft.InstallSnapshotArgs.data)
+}
+inline void InstallSnapshotArgs::set_data(const void* value,
+    size_t size) {
+  
+  data_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:raft.InstallSnapshotArgs.data)
+}
+inline std::string* InstallSnapshotArgs::_internal_mutable_data() {
+  
+  return data_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* InstallSnapshotArgs::release_data() {
+  // @@protoc_insertion_point(field_release:raft.InstallSnapshotArgs.data)
+  return data_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void InstallSnapshotArgs::set_allocated_data(std::string* data) {
+  if (data != nullptr) {
+    
+  } else {
+    
+  }
+  data_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), data,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:raft.InstallSnapshotArgs.data)
+}
+inline std::string* InstallSnapshotArgs::unsafe_arena_release_data() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:raft.InstallSnapshotArgs.data)
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  
+  return data_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+}
+inline void InstallSnapshotArgs::unsafe_arena_set_allocated_data(
+    std::string* data) {
+  GOOGLE_DCHECK(GetArena() != nullptr);
+  if (data != nullptr) {
+    
+  } else {
+    
+  }
+  data_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      data, GetArena());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:raft.InstallSnapshotArgs.data)
+}
+
+// -------------------------------------------------------------------
+
+// InstallSnapshotReply
+
+// int32 term = 1;
+inline void InstallSnapshotReply::clear_term() {
+  term_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotReply::_internal_term() const {
+  return term_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 InstallSnapshotReply::term() const {
+  // @@protoc_insertion_point(field_get:raft.InstallSnapshotReply.term)
+  return _internal_term();
+}
+inline void InstallSnapshotReply::_internal_set_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  term_ = value;
+}
+inline void InstallSnapshotReply::set_term(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_term(value);
+  // @@protoc_insertion_point(field_set:raft.InstallSnapshotReply.term)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

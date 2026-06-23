@@ -33,11 +33,15 @@ int Raft::LogTermAt(int log_index) const {
     return 0;
   }
 
-  if (log_index < 0 || log_index > LastLogIndex()) {
+  if (log_index == last_included_index_) {
+    return last_included_term_;
+  }
+
+  if (log_index < last_included_index_ || log_index > LastLogIndex()) {
     return -1;
   }
 
-  return logs_[log_index - 1].log_term();
+  return LogAt(log_index).log_term();
 }
 
 int Raft::LastLogIndexForTest() {
@@ -48,19 +52,7 @@ void Raft::Persist() {
   if (!persister_) {
     return;
   }
-
-  raft::PersistentRaftState state;
-  state.set_current_term(current_term_);
-  state.set_voted_for(voted_for_);
-
-  for (const auto& log : logs_) {
-    *state.add_logs() = log;
-  }
-
-  std::string data;
-  state.SerializeToString(&data);
-
-  persister_->SaveRaftState(data);
+  persister_->SaveRaftState(BuildPersistData());
 }
 void Raft::ReadPersist(const std::string& data) {
   if (data.empty()) {
@@ -74,6 +66,8 @@ void Raft::ReadPersist(const std::string& data) {
 
   current_term_ = state.current_term();
   voted_for_ = state.voted_for();
+  last_included_index_ = state.last_included_index();
+  last_included_term_ = state.last_included_term();
 
   logs_.clear();
   for (const auto& log : state.logs()) {
@@ -98,6 +92,8 @@ void Raft::Init(int me, const std::vector<std::pair<std::string, uint16_t>>& pee
   peers_.clear();
   if(persister_){
     ReadPersist(persister_->ReadRaftState());
+    commit_index_ = last_included_index_;
+    last_applied_ = last_included_index_;
   }
   for (int i = 0; i < peer_count_; ++i) {
       if (i == me_) {
@@ -244,6 +240,7 @@ void Raft::DoHeartbeat() {
   };
 
   std::vector<AppendTask> tasks;
+  std::vector<int> snapshot_servers;
 
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -256,8 +253,12 @@ void Raft::DoHeartbeat() {
       if (i == me_) {
         continue;
       }
-
+  if (next_index_[i] <= last_included_index_) {
+    snapshot_servers.push_back(i);
+    continue;
+  }
       int next_index = next_index_[i];
+
       int prev_log_index = next_index - 1;
       int prev_log_term = LogTermAt(prev_log_index);
 
@@ -269,13 +270,18 @@ void Raft::DoHeartbeat() {
       args.set_leader_commit(commit_index_);
 
       for (int log_index = next_index; log_index <= LastLogIndex(); ++log_index) {
-        *args.add_entries() = logs_[log_index - 1];
+        *args.add_entries() = LogAt(log_index);
       }
 
       tasks.push_back({i, args});
     }
   }
-
+  for (int server : snapshot_servers) {
+    if (stopped_) {
+      return;
+    }
+    SendInstallSnapshot(server);
+  }
   for (auto task : tasks) {
       if (stopped_) {
     return;
@@ -313,7 +319,7 @@ void Raft::DoHeartbeat() {
         UpdateCommitIndex();
       } else {
         next_index_[task.server] =
-            std::max(1, reply.update_next_index());
+            std::max(last_included_index_ + 1, reply.update_next_index());
       }
     }).join();
   }
@@ -331,7 +337,7 @@ void Raft::ApplierTicker() {
       while (last_applied_ < commit_index_) {
         ++last_applied_;
 
-        const auto& log = logs_[last_applied_ - 1];
+        const auto& log = LogAt(last_applied_);
 
         ApplyMsg msg;
         msg.command_valid = true;
@@ -448,14 +454,14 @@ void Raft::AppendEntriesImpl(const ::raft::AppendEntriesArgs* args,
  if (args->prev_log_index() > LastLogIndex()) {
     reply->set_term(current_term_);
     reply->set_success(false);
-    reply->set_update_next_index(LastLogIndex() + 1);
+    reply->set_update_next_index(last_included_index_ + 1);
     return;
   }
 
   if (LogTermAt(args->prev_log_index()) != args->prev_log_term()) {
     reply->set_term(current_term_);
     reply->set_success(false);
-    reply->set_update_next_index(std::max(1, args->prev_log_index()));
+    reply->set_update_next_index(std::max(last_included_index_ + 1, args->prev_log_index()));
     return;
   }
 
@@ -463,14 +469,17 @@ void Raft::AppendEntriesImpl(const ::raft::AppendEntriesArgs* args,
     const raft::LogEntry& entry = args->entries(i);
     int log_index = entry.log_index();
 
-    if (log_index <= LastLogIndex()) {
+    if (log_index <= last_included_index_) {
+      continue;}
+
+      if(log_index <=LastLogIndex()){
       if (LogTermAt(log_index) != entry.log_term()) {
-        logs_.resize(log_index - 1);
-        Persist();
+        logs_.resize(LogVectorIndex(log_index));
         logs_.push_back(entry);
         Persist();
       }
-    } else {
+    }
+     else {
       logs_.push_back(entry);
       Persist();
     }
@@ -532,14 +541,14 @@ if (stopped_) {
 }
 int Raft::LastLogIndex() const {
   if (logs_.empty()) {
-    return 0;
+    return last_included_index_;
   }
   return logs_.back().log_index();
 }
 
 int Raft::LastLogTerm() const {
   if (logs_.empty()) {
-    return 0;
+    return last_included_term_;
   }
   return logs_.back().log_term();
 }
@@ -636,4 +645,199 @@ void Raft::BecomeLeaderForTest() {
 
   next_index_.assign(peer_count_, last_log_index + 1);
   match_index_.assign(peer_count_, 0);
+}
+std::string Raft::BuildPersistData() const {
+  raft::PersistentRaftState state;
+
+  state.set_current_term(current_term_);
+  state.set_voted_for(voted_for_);
+  state.set_last_included_index(last_included_index_);
+  state.set_last_included_term(last_included_term_);
+
+  for (const auto& log : logs_) {
+    *state.add_logs() = log;
+  }
+
+  std::string data;
+  state.SerializeToString(&data);
+  return data;
+}
+int Raft::LogVectorIndex(int log_index) const {
+  return log_index - last_included_index_ - 1;
+}
+
+const raft::LogEntry& Raft::LogAt(int log_index) const {
+  return logs_[LogVectorIndex(log_index)];
+}
+
+void Raft::Snapshot(int index, const std::string& snapshot) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (index <= last_included_index_) {
+    return;
+  }
+
+  if (index > commit_index_) {
+    return;
+  }
+
+  int snapshot_term = LogTermAt(index);
+  if (snapshot_term == -1) {
+    return;
+  }
+
+  std::vector<raft::LogEntry> new_logs;
+  for (const auto& log : logs_) {
+    if (log.log_index() > index) {
+      new_logs.push_back(log);
+    }
+  }
+
+  logs_ = std::move(new_logs);
+  last_included_index_ = index;
+  last_included_term_ = snapshot_term;
+
+  if (last_applied_ < last_included_index_) {
+    last_applied_ = last_included_index_;
+  }
+
+  if (commit_index_ < last_included_index_) {
+    commit_index_ = last_included_index_;
+  }
+
+  if (persister_) {
+    persister_->Save(BuildPersistData(), snapshot);
+  }
+
+  std::cout << "node " << me_
+            << " create snapshot, index=" << last_included_index_
+            << ", term=" << last_included_term_
+            << ", remain_logs=" << logs_.size()
+            << std::endl;
+}
+int Raft::LogSizeForTest() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return static_cast<int>(logs_.size());
+}
+std::string Raft::ReadSnapshot() {
+  if (!persister_) {
+    return "";
+  }
+
+  return persister_->ReadSnapshot();
+}
+void Raft::InstallSnapshot(::google::protobuf::RpcController* controller,
+                           const ::raft::InstallSnapshotArgs* request,
+                           ::raft::InstallSnapshotReply* response,
+                           ::google::protobuf::Closure* done) {
+  if (stopped_) {
+    response->set_term(current_term_);
+    if (done) {
+      done->Run();
+    }
+    return;
+  }
+
+  InstallSnapshotImpl(request, response);
+
+  if (done) {
+    done->Run();
+  }
+}
+void Raft::InstallSnapshotImpl(const ::raft::InstallSnapshotArgs* args,
+                               ::raft::InstallSnapshotReply* reply) {
+  ApplyMsg msg;
+
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    reply->set_term(current_term_);
+
+    if (args->term() < current_term_) {
+      return;
+    }
+
+    if (args->term() > current_term_) {
+      BecomeFollower(args->term());
+    } else {
+      status_ = Status::Follower;
+    }
+
+    last_reset_election_time_ = std::chrono::steady_clock::now();
+    reply->set_term(current_term_);
+
+    if (args->last_included_index() <= last_included_index_) {
+      return;
+    }
+
+    std::vector<raft::LogEntry> new_logs;
+
+    if (args->last_included_index() < LastLogIndex() &&
+        LogTermAt(args->last_included_index()) == args->last_included_term()) {
+      for (const auto& log : logs_) {
+        if (log.log_index() > args->last_included_index()) {
+          new_logs.push_back(log);
+        }
+      }
+    }
+
+    logs_ = std::move(new_logs);
+
+    last_included_index_ = args->last_included_index();
+    last_included_term_ = args->last_included_term();
+
+    commit_index_ = std::max(commit_index_, last_included_index_);
+    last_applied_ = std::max(last_applied_, last_included_index_);
+
+    if (persister_) {
+      persister_->Save(BuildPersistData(), args->data());
+    }
+
+    msg.snapshot_valid = true;
+    msg.snapshot = args->data();
+    msg.snapshot_index = last_included_index_;
+    msg.snapshot_term = last_included_term_;
+  }
+
+  apply_chan_->Push(msg);
+}
+void Raft::SendInstallSnapshot(int server) {
+  raft::InstallSnapshotArgs args;
+
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (status_ != Status::Leader) {
+      return;
+    }
+
+    args.set_term(current_term_);
+    args.set_leader_id(me_);
+    args.set_last_included_index(last_included_index_);
+    args.set_last_included_term(last_included_term_);
+
+    if (persister_) {
+      args.set_data(persister_->ReadSnapshot());
+    }
+  }
+
+  raft::InstallSnapshotReply reply;
+  bool ok = peers_[server]->InstallSnapshot(&args, &reply);
+  if (!ok) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (reply.term() > current_term_) {
+    BecomeFollower(reply.term());
+    return;
+  }
+
+  if (status_ != Status::Leader || args.term() != current_term_) {
+    return;
+  }
+
+  match_index_[server] = args.last_included_index();
+  next_index_[server] = args.last_included_index() + 1;
 }

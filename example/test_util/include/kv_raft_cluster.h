@@ -28,6 +28,9 @@ class KvRaftCluster {
   int FindFollower() const;
   int WaitForNewLeader(int old_leader, int timeout_ms);
   int LastLogIndex(int index) const;
+  int LogSize(int index) const;
+  void RestartAll();
+  std::string LocalGet(int index, const std::string& key) const;
 
   const std::vector<std::pair<std::string, uint16_t>>& KvAddrs() const;
   const std::vector<std::pair<std::string, uint16_t>>& RaftAddrs() const;
@@ -36,6 +39,7 @@ class KvRaftCluster {
   std::string PersistPath(int index) const;
   void StartRaftNode(int index);
   void StartKvNode(int index);
+  
 
  private:
   int node_count_;
