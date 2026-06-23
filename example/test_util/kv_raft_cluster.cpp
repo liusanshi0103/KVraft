@@ -122,6 +122,9 @@ std::cout << "[StopNode] join kv provider thread" << std::endl;
     kv_provider_threads_[index].join();
   }
 std::cout << "[StopNode] reset objects" << std::endl;
+if (kv_servers_[index]) {
+  kv_servers_[index]->Stop();
+}
   kv_servers_[index].reset();
   rafts_[index].reset();
 

@@ -10,15 +10,23 @@ Raft::~Raft() {
 void Raft::Stop() {
   stopped_ = true;
 
+  std::cout << "[Raft::Stop] join election begin, node=" << me_ << std::endl;
   if (election_thread_.joinable()) {
     election_thread_.join();
   }
+  std::cout << "[Raft::Stop] join election done, node=" << me_ << std::endl;
+
+  std::cout << "[Raft::Stop] join heartbeat begin, node=" << me_ << std::endl;
   if (heartbeat_thread_.joinable()) {
     heartbeat_thread_.join();
   }
+  std::cout << "[Raft::Stop] join heartbeat done, node=" << me_ << std::endl;
+
+  std::cout << "[Raft::Stop] join applier begin, node=" << me_ << std::endl;
   if (applier_thread_.joinable()) {
-  applier_thread_.join();
-}
+    applier_thread_.join();
+  }
+  std::cout << "[Raft::Stop] join applier done, node=" << me_ << std::endl;
 }
 int Raft::LogTermAt(int log_index) const {
   if (log_index == 0) {
@@ -269,10 +277,16 @@ void Raft::DoHeartbeat() {
   }
 
   for (auto task : tasks) {
+      if (stopped_) {
+    return;
+  }
     std::thread([this, task]() mutable {
       raft::AppendEntriesReply reply;
 
       bool ok = peers_[task.server]->AppendEntries(&task.args, &reply);
+        if (stopped_) {
+    return;
+  }
       if (!ok) {
         return;
       }
@@ -480,22 +494,41 @@ void Raft::RequestVote(::google::protobuf::RpcController* controller,
                        const ::raft::RequestVoteArgs* request,
                        ::raft::RequestVoteReply* response,
                        ::google::protobuf::Closure* done) {
-  if (stopped_) {
-  return;
-}
+ if (stopped_) {
+    response->set_term(current_term_);
+    response->set_vote_granted(false);
+    if (done) {
+      done->Run();
+    }
+    return;
+  }
+
   RequestVoteImpl(request, response);
-  done->Run();
+
+  if (done) {
+    done->Run();
+  }
 }
 
 void Raft::AppendEntries(::google::protobuf::RpcController* controller,
                          const ::raft::AppendEntriesArgs* request,
                          ::raft::AppendEntriesReply* response,
                          ::google::protobuf::Closure* done) {
-    if (stopped_) {
-  return;
-}
+if (stopped_) {
+    response->set_term(current_term_);
+    response->set_success(false);
+    response->set_update_next_index(1);
+    if (done) {
+      done->Run();
+    }
+    return;
+  }
+
   AppendEntriesImpl(request, response);
-  done->Run();
+
+  if (done) {
+    done->Run();
+  }
 }
 int Raft::LastLogIndex() const {
   if (logs_.empty()) {

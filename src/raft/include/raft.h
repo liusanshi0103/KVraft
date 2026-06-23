@@ -27,6 +27,7 @@ class Raft : public raft::RaftRpc {
   ~Raft();
   void Stop();
   void BecomeLeaderForTest();
+
   int LastLogIndexForTest();
   void ApplierTicker();
   void UpdateCommitIndex();
@@ -88,6 +89,8 @@ class Raft : public raft::RaftRpc {
 
   int commit_index_ = 0;
   int last_applied_ = 0;
+  int last_included_index_ = 0;
+  int last_included_term_ = 0;
 
   Status status_ = Status::Follower;
   std::chrono::steady_clock::time_point last_reset_election_time_;

@@ -37,7 +37,7 @@ void RpcProvider::Run(const std::string& ip, uint16_t port) {
   ip_ = ip;
   port_ = port;
   stopped_ = false;
-  int listen_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  listen_fd_ = socket(AF_INET, SOCK_STREAM, 0);
   if (listen_fd_ == -1) {
     std::cerr << "socket failed" << std::endl;
     return;

@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <atomic>
 
 #include "blocking_queue.h"
 #include "raft.h"
@@ -14,7 +15,7 @@
 class KvServer : public kvraft::KvRaftServiceRpc {
  public:
   explicit KvServer(std::shared_ptr<Raft> raft);
-
+  void Stop();
   bool PutAppendLocal(const std::string& key,
                  const std::string& value,
                  const std::string& op_type,
@@ -51,4 +52,5 @@ void PutAppend(google::protobuf::RpcController* controller,
   std::unordered_map<int, std::shared_ptr<BlockingQueue<Op>>> wait_apply_ch_;
 
   std::thread apply_thread_;
+  std::atomic<bool> stopped_{false};
 };

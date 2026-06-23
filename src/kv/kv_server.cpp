@@ -2,11 +2,19 @@
 
 KvServer::KvServer(std::shared_ptr<Raft> raft)
     : raft_(raft) {
+  stopped_ = false;
   apply_thread_ = std::thread(&KvServer::ApplyLoop, this);
-  apply_thread_.detach();
+  
+}
+void KvServer::Stop() {
+  stopped_ = true;
+
+  if (apply_thread_.joinable()) {
+    apply_thread_.join();
+  }
 }
 void KvServer::ApplyLoop() {
-  while (true) {
+  while (!stopped_) {
     ApplyMsg msg;
 
     if (!raft_->PopApplyMsgForTest(&msg, 100)) {
