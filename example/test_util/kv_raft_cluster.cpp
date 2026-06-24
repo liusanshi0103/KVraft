@@ -7,8 +7,9 @@
 
 KvRaftCluster::KvRaftCluster(int node_count,
                              uint16_t raft_start_port,
-                             uint16_t kv_start_port)
-    : node_count_(node_count) {
+                             uint16_t kv_start_port,
+                             int max_raft_state)
+    : node_count_(node_count), max_raft_state_(max_raft_state) {
   for (int i = 0; i < node_count_; ++i) {
     raft_addrs_.push_back(
         {"127.0.0.1", static_cast<uint16_t>(raft_start_port + i)});
@@ -46,11 +47,6 @@ void KvRaftCluster::Start() {
     StartRaftNode(i);
   }
 
-  SleepMs(500);
-
-  for (int i = 0; i < node_count_; ++i) {
-    rafts_[i]->Init(i, raft_addrs_, persisters_[i]);
-  }
 
   for (int i = 0; i < node_count_; ++i) {
     StartKvNode(i);
@@ -60,10 +56,14 @@ void KvRaftCluster::Start() {
 }
 
 void KvRaftCluster::StartRaftNode(int index) {
+    if (index < 0 || index >= node_count_) {
+    return;
+  }
   if (raft_provider_threads_[index].joinable()) {
     raft_provider_threads_[index].join();
   }
     rafts_[index] = std::make_shared<Raft>();
+    rafts_[index]->Init(index, raft_addrs_, persisters_[index]);
   raft_providers_[index] = std::make_unique<RpcProvider>();
 
   raft_providers_[index]->NotifyService(rafts_[index].get());
@@ -82,7 +82,7 @@ void KvRaftCluster::StartKvNode(int index) {
      if (kv_provider_threads_[index].joinable()) {
     kv_provider_threads_[index].join();
   }
-  kv_servers_[index] = std::make_unique<KvServer>(rafts_[index]);
+  kv_servers_[index] = std::make_unique<KvServer>(rafts_[index], max_raft_state_);
   kv_providers_[index] = std::make_unique<RpcProvider>();
 
   kv_providers_[index]->NotifyService(kv_servers_[index].get());
@@ -139,10 +139,6 @@ void KvRaftCluster::RestartNode(int index) {
   }
 
   StartRaftNode(index);
-
-  SleepMs(300);
-
-  rafts_[index]->Init(index, raft_addrs_, persisters_[index]);
 
   StartKvNode(index);
 

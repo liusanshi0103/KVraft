@@ -34,6 +34,7 @@ class Raft : public raft::RaftRpc {
   std::string ReadSnapshot();
   void UpdateCommitIndex();
   void Persist();
+  int GetRaftStateSize();
   void ReadPersist(const std::string& data);
 
   bool PopApplyMsgForTest(ApplyMsg* msg, int timeout_ms);

@@ -797,6 +797,10 @@ void Raft::InstallSnapshotImpl(const ::raft::InstallSnapshotArgs* args,
     msg.snapshot = args->data();
     msg.snapshot_index = last_included_index_;
     msg.snapshot_term = last_included_term_;
+    std::cout << "node " << me_
+          << " install snapshot, index=" << last_included_index_
+          << ", term=" << last_included_term_
+          << std::endl;
   }
 
   apply_chan_->Push(msg);
@@ -840,4 +844,16 @@ void Raft::SendInstallSnapshot(int server) {
 
   match_index_[server] = args.last_included_index();
   next_index_[server] = args.last_included_index() + 1;
+  std::cout << "leader " << me_
+          << " send InstallSnapshot to " << server
+          << ", last_included_index=" << args.last_included_index()
+          << ", last_included_term=" << args.last_included_term()
+          << std::endl;
+}
+int Raft::GetRaftStateSize() {
+  if (!persister_) {
+    return 0;
+  }
+
+  return static_cast<int>(persister_->RaftStateSize());
 }

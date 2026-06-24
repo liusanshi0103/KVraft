@@ -13,7 +13,7 @@ class Persister {
   std::string ReadSnapshot();
 
   void Save(const std::string& raft_state, const std::string& snapshot);
-
+  long long RaftStateSize();
  private:
   std::mutex mutex_;
   std::string file_path_;

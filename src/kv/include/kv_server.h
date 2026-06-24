@@ -14,7 +14,7 @@
 
 class KvServer : public kvraft::KvRaftServiceRpc {
  public:
-  explicit KvServer(std::shared_ptr<Raft> raft);
+  explicit KvServer(std::shared_ptr<Raft> raft, int max_raft_state = -1);
   void Stop();
   std::string GetValueForTest(const std::string& key);
   bool PutAppendLocal(const std::string& key,
@@ -56,4 +56,5 @@ void PutAppend(google::protobuf::RpcController* controller,
 
   std::thread apply_thread_;
   std::atomic<bool> stopped_{false};
+  int max_raft_state_=-1;
 };

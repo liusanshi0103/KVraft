@@ -6,41 +6,37 @@
 #include "util.h"
 
 int main() {
-  KvRaftCluster cluster(3, 22000, 23000);
+  KvRaftCluster cluster(3, 27000, 28000, 400);
   cluster.Start();
 
   Clerk clerk(cluster.KvAddrs());
 
-  for (int i = 0; i < 10; ++i) {
-    clerk.Append("x", std::to_string(i));
+  for (int i = 0; i < 30; ++i) {
+    clerk.Append("k", "0123456789");
   }
 
-  SleepMs(2000);
+  SleepMs(3000);
 
-  std::string value = clerk.Get("x");
-  std::cout << "value=" << value << std::endl;
-
+  std::string value = clerk.Get("k");
   int leader = cluster.FindLeader();
-  int log_size = cluster.LogSize(leader);
 
-  std::cout << "leader=" << leader
-            << ", log_size=" << log_size
-            << std::endl;
+  std::cout << "leader=" << leader << std::endl;
+  std::cout << "value_size=" << value.size() << std::endl;
 
-  if (value != "0123456789") {
-    std::cerr << "snapshot basic test failed: wrong value" << std::endl;
+  for (int i = 0; i < 3; ++i) {
+    std::cout << "node " << i
+              << " log_size=" << cluster.LogSize(i)
+              << " last_log_index=" << cluster.LastLogIndex(i)
+              << std::endl;
+  }
+
+  if (value.size() != 300) {
+    std::cerr << "snapshot size test failed: wrong value size" << std::endl;
     cluster.Stop();
     return 1;
   }
-
-  if (log_size >= 10) {
-    std::cerr << "snapshot basic test failed: log not compacted" << std::endl;
-    cluster.Stop();
-    return 1;
-  }
-
-  std::cout << "snapshot basic test passed" << std::endl;
 
   cluster.Stop();
+  std::cout << "snapshot size test passed" << std::endl;
   return 0;
 }

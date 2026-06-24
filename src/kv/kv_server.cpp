@@ -1,7 +1,7 @@
 #include "kv_server.h"
 
-KvServer::KvServer(std::shared_ptr<Raft> raft)
-    : raft_(raft) {
+KvServer::KvServer(std::shared_ptr<Raft> raft, int max_raft_state)
+    : raft_(raft), max_raft_state_(max_raft_state) {
   ReadSnapshot(raft_->ReadSnapshot());
   stopped_ = false;
   apply_thread_ = std::thread(&KvServer::ApplyLoop, this);
@@ -245,7 +245,10 @@ void KvServer::MaybeSnapshot(int index) {
     return;
   }
 
-  if (index % 5 != 0) {
+  if (max_raft_state_= -1) {
+    return;
+  }
+  if (raft_->GetRaftStateSize() < max_raft_state_) {
     return;
   }
 

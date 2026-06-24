@@ -16,7 +16,8 @@ class KvRaftCluster {
  public:
   KvRaftCluster(int node_count,
                 uint16_t raft_start_port,
-                uint16_t kv_start_port);
+                uint16_t kv_start_port,
+                int max_raft_state=-1);
 
   void Start();
   void Stop();
@@ -57,4 +58,5 @@ class KvRaftCluster {
   std::vector<std::thread> kv_provider_threads_;
 
   std::vector<std::shared_ptr<Persister>> persisters_;
+  int max_raft_state_;
 };

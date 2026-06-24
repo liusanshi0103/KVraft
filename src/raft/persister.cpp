@@ -53,3 +53,13 @@ void Persister::Save(const std::string& raft_state,
   WriteFile(file_path_, raft_state);
   WriteFile(snapshot_path_, snapshot);
 }
+long long Persister::RaftStateSize() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  std::ifstream ifs(file_path_, std::ios::binary | std::ios::ate);
+  if (!ifs.is_open()) {
+    return 0;
+  }
+
+  return static_cast<long long>(ifs.tellg());
+}
