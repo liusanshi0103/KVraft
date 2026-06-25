@@ -4,7 +4,7 @@
 #include <iostream>
 #include <random>
 #include <thread>
-
+#include "mprpcconfig.h"
 #include "mprpcchannel.h"
 #include "mprpccontroller.h"
 
@@ -15,7 +15,30 @@ Clerk::Clerk(const std::vector<std::pair<std::string, uint16_t>>& servers)
   auto now = std::chrono::steady_clock::now().time_since_epoch().count();
   client_id_ = "client-" + std::to_string(now);
 }
+Clerk::Clerk(const std::string& config_file)
+    : leader_id_(0),
+      request_id_(0) {
+  MprpcConfig config;
+  if (!config.LoadConfigFile(config_file)) {
+    std::cerr << "load config failed: " << config_file << std::endl;
+    return;
+  }
 
+  int node_count = config.LoadInt("node_count");
+
+  for (int i = 0; i < node_count; ++i) {
+    std::string prefix = "node" + std::to_string(i);
+
+    std::string ip = config.Load(prefix + "kvip");
+    uint16_t port =
+        static_cast<uint16_t>(config.LoadInt(prefix + "kvport"));
+
+    servers_.push_back({ip, port});
+  }
+
+  auto now = std::chrono::steady_clock::now().time_since_epoch().count();
+  client_id_ = "client-" + std::to_string(now);
+}
 int Clerk::NextRequestId() {
   ++request_id_;
   return request_id_;

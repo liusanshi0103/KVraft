@@ -6,7 +6,7 @@
 #include <thread>
 #include <unordered_map>
 #include <atomic>
-
+#include "skip_list.h"
 #include "blocking_queue.h"
 #include "raft.h"
 #include "util.h"
@@ -50,7 +50,7 @@ void PutAppend(google::protobuf::RpcController* controller,
   std::mutex mutex_;
   std::shared_ptr<Raft> raft_;
 
-  std::unordered_map<std::string, std::string> kv_db_;
+  std::unique_ptr<SkipList<std::string, std::string>> kv_db_;
   std::unordered_map<std::string, int> last_request_id_;
   std::unordered_map<int, std::shared_ptr<BlockingQueue<Op>>> wait_apply_ch_;
 

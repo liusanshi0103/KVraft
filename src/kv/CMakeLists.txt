@@ -13,4 +13,5 @@ target_link_libraries(kv_lib PUBLIC
     rpc_lib
     common_lib
     protobuf
+    skiplist_lib
 )

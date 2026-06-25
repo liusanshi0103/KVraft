@@ -1,7 +1,9 @@
 #include "kv_server.h"
 
 KvServer::KvServer(std::shared_ptr<Raft> raft, int max_raft_state)
-    : raft_(raft), max_raft_state_(max_raft_state) {
+    : raft_(raft),
+    kv_db_(std::make_unique<SkipList<std::string,std::string>>(6)),
+     max_raft_state_(max_raft_state) {
   ReadSnapshot(raft_->ReadSnapshot());
   stopped_ = false;
   apply_thread_ = std::thread(&KvServer::ApplyLoop, this);
@@ -10,12 +12,14 @@ KvServer::KvServer(std::shared_ptr<Raft> raft, int max_raft_state)
 std::string KvServer::GetValueForTest(const std::string& key) {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  auto it = kv_db_.find(key);
-  if (it == kv_db_.end()) {
-    return "";
-  }
+std::string value;
+if (!kv_db_->search_element(key, value)) {
+  return "";
+}
 
-  return it->second;
+return value;
+
+
 }
 void KvServer::Stop() {
   stopped_ = true;
@@ -47,12 +51,21 @@ void KvServer::ApplyLoop() {
 
       if (!IsDuplicate(op.client_id, op.request_id)) {
         if (op.operation == "Put") {
-          kv_db_[op.key] = op.value;
-          last_request_id_[op.client_id] = op.request_id;
-        } else if (op.operation == "Append") {
-          kv_db_[op.key] += op.value;
-          last_request_id_[op.client_id] = op.request_id;
-        }
+    std::string key = op.key;
+   std::string value = op.value;
+
+   kv_db_->insert_set_element(key, value);
+    last_request_id_[op.client_id] = op.request_id;
+  } else if (op.operation == "Append") {
+    std::string old_value;
+    kv_db_->search_element(op.key, old_value);
+
+    std::string key = op.key;
+    std::string new_value = old_value + op.value;
+
+    kv_db_->insert_set_element(key, new_value);
+    last_request_id_[op.client_id] = op.request_id;
+}
       }
     }
 
@@ -124,12 +137,12 @@ std::string KvServer::GetLocal(const std::string& key,
   std::lock_guard<std::mutex> lock(mutex_);
   *wrong_leader = false;
 
-  auto it = kv_db_.find(key);
-  if (it == kv_db_.end()) {
-    return "";
-  }
+  std::string value;
+  if (!kv_db_->search_element(key, value)) {
+  return "";
+ }
 
-  return it->second;
+    return value;
 }
 void KvServer::PutAppend(google::protobuf::RpcController* controller,
                          const kvraft::PutAppendArgs* request,
@@ -221,13 +234,7 @@ std::string KvServer::MakeSnapshot() {
 
   std::string data;
 
-  data += std::to_string(kv_db_.size());
-  data += "\n";
-
-  for (const auto& [key, value] : kv_db_) {
-    AppendString(&data, key);
-    AppendString(&data, value);
-  }
+  AppendString(&data, kv_db_->dump_file());
 
   data += std::to_string(last_request_id_.size());
   data += "\n";
@@ -245,7 +252,7 @@ void KvServer::MaybeSnapshot(int index) {
     return;
   }
 
-  if (max_raft_state_= -1) {
+  if (max_raft_state_== -1) {
     return;
   }
   if (raft_->GetRaftStateSize() < max_raft_state_) {
@@ -295,38 +302,22 @@ void KvServer::ReadSnapshot(const std::string& snapshot) {
     return;
   }
 
-  std::unordered_map<std::string, std::string> new_kv_db;
-  std::unordered_map<std::string, int> new_last_request_id;
-
   size_t pos = 0;
-  std::string line;
-
-  if (!ReadLine(snapshot, &pos, &line)) {
+  std::string kv_dump;
+    if (!ReadString(snapshot, &pos, &kv_dump)) {
     return;
   }
-
-  int kv_size = std::stoi(line);
-
-  for (int i = 0; i < kv_size; ++i) {
-    std::string key;
-    std::string value;
-
-    if (!ReadString(snapshot, &pos, &key)) {
-      return;
-    }
-
-    if (!ReadString(snapshot, &pos, &value)) {
-      return;
-    }
-
-    new_kv_db[key] = value;
-  }
-
+   auto new_kv_db =
+    std::make_unique<SkipList<std::string, std::string>>(6);
+    new_kv_db->load_file(kv_dump);
+  std::unordered_map<std::string, int> new_last_request_id;
+  std::string line;
   if (!ReadLine(snapshot, &pos, &line)) {
     return;
   }
 
   int request_size = std::stoi(line);
+
 
   for (int i = 0; i < request_size; ++i) {
     std::string client_id;

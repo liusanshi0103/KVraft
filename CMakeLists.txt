@@ -12,6 +12,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src/rpc/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/rpc/proto)
 include_directories(${PROJECT_SOURCE_DIR}/src/raft/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/raft/proto)
+include_directories(${PROJECT_SOURCE_DIR}/src/skipList/include)
+add_subdirectory(src/skipList)
 
 add_subdirectory(src/common)
 add_subdirectory(src/rpc)

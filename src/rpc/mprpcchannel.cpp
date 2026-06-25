@@ -23,7 +23,7 @@ int MprpcChannel::NewConnect(std::string* err_msg) {
   int client_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (client_fd == -1) {
     *err_msg = "create socket failed, errno: " + std::to_string(errno);
-    return false;
+    return -1;
   }
 
   sockaddr_in server_addr{};

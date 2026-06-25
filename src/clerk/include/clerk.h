@@ -11,7 +11,7 @@
 class Clerk {
  public:
   explicit Clerk(const std::vector<std::pair<std::string, uint16_t>>& servers);
-
+  explicit Clerk(const std::string& config_file);
   void Put(const std::string& key, const std::string& value);
   void Append(const std::string& key, const std::string& value);
   std::string Get(const std::string& key);

@@ -18,7 +18,7 @@ class KvRaftCluster {
                 uint16_t raft_start_port,
                 uint16_t kv_start_port,
                 int max_raft_state=-1);
-
+  explicit KvRaftCluster(const std::string& config_file);
   void Start();
   void Stop();
 

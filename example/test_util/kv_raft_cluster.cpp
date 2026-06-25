@@ -2,7 +2,7 @@
 
 #include <cstdio>
 #include <iostream>
-
+#include "mprpcconfig.h"
 #include "util.h"
 
 KvRaftCluster::KvRaftCluster(int node_count,
@@ -16,6 +16,44 @@ KvRaftCluster::KvRaftCluster(int node_count,
 
     kv_addrs_.push_back(
         {"127.0.0.1", static_cast<uint16_t>(kv_start_port + i)});
+  }
+  
+  rafts_.resize(node_count_);
+  kv_servers_.resize(node_count_);
+
+  raft_providers_.resize(node_count_);
+  kv_providers_.resize(node_count_);
+
+  raft_provider_threads_.resize(node_count_);
+  kv_provider_threads_.resize(node_count_);
+
+  persisters_.resize(node_count_);
+}
+KvRaftCluster::KvRaftCluster(const std::string& config_file) {
+  MprpcConfig config;
+
+  if (!config.LoadConfigFile(config_file)) {
+    std::cerr << "[KvRaftCluster] load config failed: "
+              << config_file << std::endl;
+    std::exit(1);
+  }
+
+  node_count_ = config.LoadInt("node_count");
+  max_raft_state_ = config.LoadInt("max_raft_state", -1);
+
+  for (int i = 0; i < node_count_; ++i) {
+    std::string prefix = "node" + std::to_string(i);
+
+    std::string raft_ip = config.Load(prefix + "raftip");
+    uint16_t raft_port =
+        static_cast<uint16_t>(config.LoadInt(prefix + "raftport"));
+
+    std::string kv_ip = config.Load(prefix + "kvip");
+    uint16_t kv_port =
+        static_cast<uint16_t>(config.LoadInt(prefix + "kvport"));
+
+    raft_addrs_.push_back({raft_ip, raft_port});
+    kv_addrs_.push_back({kv_ip, kv_port});
   }
 
   rafts_.resize(node_count_);
@@ -39,6 +77,7 @@ void KvRaftCluster::Start() {
     std::string path = PersistPath(i);
 
     std::remove(path.c_str());
+    std::remove((path + ".snapshot").c_str());
 
     persisters_[i] = std::make_shared<Persister>(path);
   }
@@ -225,13 +264,13 @@ int KvRaftCluster::LogSize(int index) const {
 }
 void KvRaftCluster::RestartAll() {
   for (int i = 0; i < node_count_; ++i) {
-    StartRaftNode(i);
+    StopNode(i);
   }
 
   SleepMs(500);
 
   for (int i = 0; i < node_count_; ++i) {
-    rafts_[i]->Init(i, raft_addrs_, persisters_[i]);
+    StartRaftNode(i);
   }
 
   for (int i = 0; i < node_count_; ++i) {
